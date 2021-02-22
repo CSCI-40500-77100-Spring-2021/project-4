@@ -1,0 +1,90 @@
+@font-face {
+    font-family: 'UberMoveTextRegular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Uber Move Text Regular'), url('./fonts/UberMoveTextRegular.woff') format('woff');
+}
+@font-face {
+    font-family: 'UberMoveTextLight';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Uber Move Text Light'), url('./fonts/UberMoveTextLight.woff') format('woff');
+}
+@font-face {
+    font-family: 'UberMoveTextMedium';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Uber Move Text Medium'), url('./fonts/UberMoveTextMedium.woff') format('woff');
+}
+@font-face {
+    font-family: 'UberMoveTextBold';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Uber Move Text Bold'), url('./fonts/UberMoveTextBold.woff') format('woff');
+}
+
+.ProtoWrapper {
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden;
+    display: block;
+    background-color: rgb(255, 255, 255);
+}
+
+.ProtoTopContainer {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.headerSection {
+    width: 100% !important;
+    height: 15% !important;
+    font-family: UberMoveTextBold;
+}
+.headerSection h2 {
+    font-family: UberMoveTextLight  !important;
+}
+
+.headerSection span {
+    color: rgb(0,185, 97);
+}
+
+.joinOptions {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-content: center;
+    width: 90% !important;
+    height: 80% !important;
+    padding-top: 5%;
+    padding-left: 5%;
+    padding-right: 5%;
+    font-family: UberMoveTextRegular;
+}
+
+.opt {
+    width: 300px;
+    height: 200px;
+    border: 3px solid rgb(0,185, 97);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    /* margin-left: 24px;
+    margin-right: 24px; */
+    border-radius: 0px;
+    cursor: pointer;
+    transition-timing-function: cubic-bezier(.25,.1,.25,1);
+}
+
+.opt:hover {
+    opacity: .7;
+    transform: scale(1.02);
+    /* border-width: 3px; */
+}
+
+
