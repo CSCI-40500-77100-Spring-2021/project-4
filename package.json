@@ -1,0 +1,39 @@
+{
+  "name": "project-4",
+  "version": "1.0.0",
+  "description": "Project Serve developed during SWE spring 2021",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CSCI-40500-77100-Spring-2021/project-4.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CSCI-40500-77100-Spring-2021/project-4/issues"
+  },
+  "homepage": "https://github.com/CSCI-40500-77100-Spring-2021/project-4#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "body-parser": "^1.19.0",
+    "concurrently": "^6.0.0",
+    "config": "^3.3.4",
+    "connect-redis": "^5.1.0",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.11.19",
+    "passport": "^0.4.1",
+    "passport-local": "^1.0.0",
+    "redis": "^3.0.2"
+  }
+}
