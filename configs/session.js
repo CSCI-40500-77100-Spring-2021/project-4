@@ -18,7 +18,7 @@ const SESSION_OPTIONS = {
     },
     rolling: true,
     resave: false,
-    saveUnitialized: true
+    saveUninitialized: true
 };
 
 exports.SESSION_OPTIONS = SESSION_OPTIONS;

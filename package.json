@@ -4,7 +4,11 @@
   "description": "Project Serve developed during SWE spring 2021",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "app-server": "nodemon server.js",
+    "redis-server": "redis-server /usr/local/etc/redis.conf",
+    "server": "concurrently \"npm run redis-server\" \"npm run app-server\""
   },
   "repository": {
     "type": "git",

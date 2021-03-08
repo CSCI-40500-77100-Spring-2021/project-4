@@ -50,5 +50,13 @@ if(IN_PROD) {
 }
 
 const SERVER = app.listen(PORT, () => {
-    console.log('Server is running on port: ', PORT);
-})
+    console.log('App server is running on port: ', PORT);
+});
+
+redisClient.on('connect', () => {
+    console.log('Redis server in running on port: 6379');
+});
+
+redisClient.on('error', (err) => {
+    console.error('Redis client error', err);
+});
