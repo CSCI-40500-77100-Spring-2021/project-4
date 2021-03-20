@@ -1,6 +1,9 @@
 const fetch = require('node-fetch');
 const { OPEN_DATA_APP_TOKEN, OPEN_DATA_SECRET_TOKEN, OPEN_DATA_KEY } = require('../configs/app');
 
+const acceptable_industries = ['Tobacco Retail Dealer', 'General Vendor', 'Stoop Line Stand', 'Sidewalk Cafe', 'Dealer In Products',
+'Special Sale', 'Newsstand', 'Catering Establishment', 'General Vendor Distributor'];
+
 class DCA_Check_Result {
     constructor(license, data, success, msg) {
         this.license = license;
@@ -52,8 +55,8 @@ SearchDCALicense = async (license) => {
     let resMsg = resSuccess ? "License match found" : "Something went wrong";
     resMsg = noRes ? "No license match found." : resMsg;
     let result = new DCA_Check_Result(license, searchData, resSuccess, resMsg);
-    
     return result;
 }
+
 
 module.exports = SearchDCALicense;
