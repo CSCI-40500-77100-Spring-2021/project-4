@@ -59,4 +59,4 @@ SearchDCALicense = async (license) => {
 }
 
 
-module.exports = SearchDCALicense;
+module.exports = {SearchDCALicense, DCA_Check_Result};
