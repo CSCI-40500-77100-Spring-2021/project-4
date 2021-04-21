@@ -41,3 +41,13 @@ To view this release:
 * run `npm install` or `yarn-install` to install the required project dependencies
 * After the installation is complete, in the my-app directory, run `yarn start` command to run the project in localhost.
 * A browswer window should be open with the prototype rendered. Click on the tabs to view the popup messages.
+
+## Docker
+The current Docker image is simply a starting point of the frontend implementation. More to follow.
+
+##### Frontend:
+```
+docker pull rickyricky14/project-4-frontend
+sudo docker run -p 8080:80 rickyricky14/project-4-frontend
+# Run the port provided (Ex. http://172.17.0.2:3000)
+```
