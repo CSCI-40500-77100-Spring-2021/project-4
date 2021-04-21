@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const CustomerSchema = new Schema({
     firstname: {type: String, required: true},
     lastname: {type: String, required: true},
-    phone_number: {type: String, required: true},
+    phone_number: {type: String, required: false},
     email: {type: String, required: false},
     password: {type: String, required: true},
     locationOn: {type: Boolean, required: true},
@@ -16,7 +16,11 @@ const CustomerSchema = new Schema({
     sms_notifon: {type: Boolean, required: true, default: false},
     notif_radius: {type: Number, required: true, default: 1},
     // notif_radius in miles
-    recent_orders: [{type: String, required: false}]
+    recent_orders: [{type: String, required: false}],
+
+    account_type: {type: String, required: true, default: 'Customer'},
+    verified: {type: Boolean, required: true, default: false},
+    tfa_otp: {type: String, required: true}
 });
 
 module.exports = Customer = mongoose.model('Customer', CustomerSchema);

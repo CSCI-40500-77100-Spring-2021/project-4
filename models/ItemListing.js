@@ -22,7 +22,7 @@ const ItemListingSchema = new Schema({
     listing_duration: {type: String, required: true}, // how long item should bve listed
 
     listing_token: {type: String, required: true},
-    fot: {type: String, required: true}
+    fot: {type: String, required: true} // fulfulled orders token
 });
 
 module.exports = ItemListing = mongoose.model('ItemListing', ItemListingSchema);

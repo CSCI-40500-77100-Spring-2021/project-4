@@ -23,6 +23,7 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //Passport config here
+require('./configs/passport')(passport);
 
 const db = MONGO_URI;
 mongoose.connect(db, { useNewUrlParser: true, useFindAndModify: false, useUnifiedTopology: true })
@@ -39,6 +40,8 @@ app.use(session({
 }));
 
 //initialise Passportjs middleware here
+app.use(passport.initialize());
+app.use(passport.session());
 
 if(IN_PROD) {
     app.use(express.static('client/my-app/build'));

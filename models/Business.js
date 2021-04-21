@@ -20,7 +20,12 @@ const GeneralBusiness = new Schema({
     reviews: {type: String, required: false, ref: "Reviews"},
     business_type: {type: String, required: true},
     timeOpen: {type: String, required: true},
-    timeClose: {type: String, required: true}
+    timeClose: {type: String, required: true},
+    master_key: {type: String, required: true},
+
+    account_type: {type: String, required: true, default: 'Business'},
+    verified: {type: Boolean, required: true, default: false},
+    tfa_otp: {type: String, required: true}
 }, baseOptions);
 
 module.exports = Business = mongoose.model('Business', GeneralBusiness);
