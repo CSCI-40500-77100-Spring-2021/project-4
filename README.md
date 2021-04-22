@@ -51,3 +51,9 @@ docker pull rickyricky14/project-4-frontend
 sudo docker run -p 8080:80 rickyricky14/project-4-frontend
 # Run the port provided (Ex. http://172.17.0.2:3000)
 ```
+### Backend:
+```
+docker pull serveappproj4dev/project4-backend
+docker run serveappproj4dev/project4-backend 
+```
+the above will start a full nodejs, expressjs, redis server, using redis for session management, and a mongodb image for to connect via mongoose
