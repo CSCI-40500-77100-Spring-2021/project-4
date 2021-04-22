@@ -45,13 +45,13 @@ To view this release:
 ## Docker
 The current Docker image is simply a starting point of the frontend implementation. More to follow.
 
-##### Frontend:
+**Frontend**:
 ```
 docker pull rickyricky14/project-4-frontend
 sudo docker run -p 8080:80 rickyricky14/project-4-frontend
 # Run the port provided (Ex. http://172.17.0.2:3000)
 ```
-### Backend:
+**Backend**:
 ```
 docker pull serveappproj4dev/project4-backend
 docker run serveappproj4dev/project4-backend 
