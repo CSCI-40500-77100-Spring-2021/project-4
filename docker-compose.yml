@@ -1,0 +1,17 @@
+version: "3"
+services: 
+  redis:
+    image: redis
+    volumes: 
+      - $PWD./redis.conf:/usr/local/etc/redis.conf
+    ports:
+      - "6379:6379"
+  db:
+    image: mongo
+  app:
+    build: .
+    links:
+      - redis
+    depends_on: 
+      - redis
+      

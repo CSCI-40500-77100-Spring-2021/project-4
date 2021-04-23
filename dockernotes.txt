@@ -1,0 +1,369 @@
+--Docker run command
+>>> docker run nginx
+
+runs container from image; run's instance of image.
+
+>>> docker ps
+
+lists all running container
+random id, and name created from container
+
+>>> docker ps -a
+
+lists all conatainers running or not
+
+>>> docker stop [container id/ container name]
+
+stops running container
+
+>>> docker rm [container name]
+
+removes container
+
+>>> docker images
+
+lists available images installed
+
+>>> docker rmi [image name]
+
+removes an image
+
+>>> docker pull [image name]
+
+only pull image, without running an instance
+
+
+containers do not host operating systems. after running instance of image, and task is complete, container goes into exited state.
+
+
+>>> docker exec [container name] [command] [filepath]
+
+execute command on running container at file provided at filepath
+
+
+>>> docker run -d [container name]
+
+run a container in detached mode, "in the background"
+
+>>> docker attach [container id]
+
+re-attach to a detached running container
+
+
+>>> docker run [image name]:tag
+
+run instance of image with tag being the version
+
+--- Port mapping/ port publishing
+
+-- volume mappimg
+how data is persisted in docker container
+
+data stored in /var/lib/mysql
+
+
+>>> docker inspect [container name]
+
+displays container info in json format
+
+>>> docker logs [container name/id]
+
+displays container logs
+
+
+--- Creating your own image
+1) create Dockerfile
+2) use RUN command to run any preliminary tasks like updating source reps, installing dpendencies and updating them, etc
+3) COPY command to COPY . /path/to/source-code
+4) ENTRYPOINT of app. eg: "FLASK_APP=/opt/source-code/app.py flask run"
+
+docker build Dockerfile -t dockerHubAccountName/image-name
+
+docker push dockerHubAccountName/image-name
+
+--- CMD vs ENTRYPOINT
+  
+
+--- Networking
+docker creates 3 networks automatically
+
+bridge, none, and host network
+
+bridge network is private internal network created by docker on host, all containers are attached to network by default and get internal ip address
+
+to access containers from outside world, map ports of containers to ports of docker host. also,associate container to host network to access from outside world.
+
+host network
+eg: if web server is on port 5000, setting netwrok to host, will just let container be accessible on port 5000 without any port mapping
+
+
+--- Create own docker network
+eg: docker network create \
+    --driver bridge \
+    --subnet 182.18.0.0/16
+    custom-isolated-network
+
+
+--- File systems
+
+/var/lib/docker
+
+created when docker installed
+
+----/var/lib/docker
+------- /aufs
+------- /containers
+------- /images
+------- /volumes
+
+docker run -v data_volume:/var/lib/mysql mysql
+
+mounts creates new container, and mounts data_volume into var/lib/mysql in container so all data written by database is stored in data volume
+
+
+docker run \ -- mount type=bind, source=/data/mysql, target=/var/lib/mysql mysql
+
+
+--- Docker Compose
+if needed to setup complex app with multiple services, use docker-compose.yml
+
+services:
+    web:
+        image: "web image"
+    database:
+        image: "mongodb"
+    messaging:
+        image: "redis: alpine"
+    orchestration:
+        image: "ansible"
+
+docker-compose up
+
+assume we had an image for redis, a worker app, a db, a frontend app image called vote, and result; the docker-compose.yml would resemble:
+
+services:
+    redis:
+        image: redis
+    db:
+        image: postgress:9.4
+    vote:
+        image: voting-app
+        ports:
+            - 5000:80
+        links:
+            - redis
+    result:
+        image: result-app
+        ports:
+            - 5001:80
+        links:
+            - db
+    worker:
+        image: worker
+        links:
+            - redis:
+            - db
+
+--- Docker compose build
+to instruct docker to build our custom images from compose yml, we replace the image property with a build, specifying the location
+of the build which also has a Dockerfile as such:
+
+services:
+    redis:
+        image: redis
+    db:
+        image: postgress:9.4
+    vote:
+        //image: voting-app
+        build: ./vote
+        ports:
+            - 5000:80
+        links:
+            - redis
+    result:
+        //image: result-app
+        build: ./result
+        ports:
+            - 5001:80
+        links:
+            - db
+    worker:
+        //image: worker
+        build: ./worker
+        links:
+            - redis:
+            - db
+
+for new docker-compose version, must specify version type at top:
+
+version: 2
+services:
+    redis:
+        image: redis
+    db:
+        image: postgress:9.4
+    vote:
+        //image: voting-app
+        build: ./vote
+        ports:
+            - 5000:80
+        links:
+            - redis
+    result:
+        //image: result-app
+        build: ./result
+        ports:
+            - 5001:80
+        links:
+            - db
+    worker:
+        //image: worker
+        build: ./worker
+        links:
+            - redis:
+            - db
+
+No links needed in docker version 2 and up b/c docker creates automatically a bridge network, and connects all containers to that network
+
+depends_on property creates order of build, by letting docker know which containers should start before the other ones... eg:
+
+version: 3
+services:
+    redis:
+        image: redis
+    db: 
+        image: postgress:9.4
+    vote:
+        build: ./vote
+        ports:
+            - 5000:80
+        depends_on: 
+            - redis
+    result:
+        build: ./result
+        ports:
+            - 5001:80
+        depends_on: 
+            - db
+    worker:
+        build: ./worker
+        depends_on: 
+            - redis
+
+
+
+
+--- Defining networks
+
+version: 3
+services:
+    redis:
+        image: redis
+        networks:
+            - backend
+    db: 
+        image: postgress:9.4
+        networks:
+            - backend
+    vote:
+        build: ./vote
+        ports:
+            - 5000:80
+        depends_on: 
+            - redis
+        networks:
+            - frontend
+            - backend
+            
+    result:
+        build: ./result
+        ports:
+            - 5001:80
+        depends_on: 
+            - db
+        networks:
+            - frontend
+            - backend
+    worker:
+        build: ./worker
+        depends_on: 
+            - redis
+        networks:
+            - backend
+networks:
+    frontend:
+    backend:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

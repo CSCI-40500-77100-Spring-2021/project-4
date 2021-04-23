@@ -11,9 +11,11 @@ const redis = require('redis');
 const redisStore = require('connect-redis')(session);
 const redisClient = redis.createClient();
 
-const { PORT, MONGO_URI, CLIENT_ORIGIN, IN_PROD } = require('./configs/app');
+// const { PORT, MONGO_URI, CLIENT_ORIGIN, IN_PROD } = require('./configs/app');
 const cookieParser = require('cookie-parser');
+
 const { SESSION_OPTIONS } = require('./configs/session');
+const { PORT, MONGO_URI, CLIENT_ORIGIN, IN_PROD } = require('./configs/app');
 
 const app = express();
 
@@ -52,14 +54,17 @@ if(IN_PROD) {
     });
 }
 
+
 const SERVER = app.listen(PORT, () => {
     console.log('App server is running on port: ', PORT);
 });
 
 redisClient.on('connect', () => {
     console.log('Redis server in running on port: 6379');
+
 });
 
 redisClient.on('error', (err) => {
     console.error('Redis client error', err);
 });
+
