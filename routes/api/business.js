@@ -151,6 +151,12 @@ router.get('/signup-dca-final', proceed_to_dca_signup3, (req, res) => {
         license_expr_date: sessData.lic_expir_dd,
         license_industry: sessData.industry
     };
+    // check for inputs
+    if(!business_name.trim() || !permanent_address.trim() || !coordinates || !manager.trim() || !contact_email.trim() || !business_type.trim() || !)
+
+    let newBizz = new Business({
+
+    });
 });
 
 
