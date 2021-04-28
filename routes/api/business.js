@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const Business = require('../../models/Business');
 
 const licenseRegex = /^([0-9]{7})(-DCA)$/g;
+const regex = /^([a-zA-Z0-9]+[a-zA-Z0-9.!#$%&'*+\-\/=?^_`{|}~]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})$/g;
 
 const { SearchDCALicense } = require('../../middleware/DCA_SEARCH');
 const { SendMsgWithCallBack } = require('../../middleware/SMS_VERIFICATION');
@@ -152,7 +153,14 @@ router.get('/signup-dca-final', proceed_to_dca_signup3, (req, res) => {
         license_industry: sessData.industry
     };
     // check for inputs
-    if(!business_name.trim() || !permanent_address.trim() || !coordinates || !manager.trim() || !contact_email.trim() || !business_type.trim() || !)
+    if(!has_dca_license) {
+        return res.status(401).json({success: false, msg: "Must have a DCA license to proceed with this action"});
+    }
+    if(!business_name.trim() || !permanent_address.trim() || !coordinates || !manager.trim() || !contact_email.trim() 
+    || !business_type.trim() || !contact_number.trim()) {
+        return res.status(401).json({success: false, msg: "Please enter all fields."});
+    }
+
 
     let newBizz = new Business({
 
