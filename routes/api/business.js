@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const { v4: uuidv4 } = require('uuid');
 
+const Business = require('../../models/Business');
+
 const licenseRegex = /^([0-9]{7})(-DCA)$/g;
 
 const { SearchDCALicense } = require('../../middleware/DCA_SEARCH');
@@ -86,18 +88,6 @@ router.get('/proceed-dca-signup2', proceed_to_dca_signup2, (req, res) => {
     return res.status(202).json({success: true, msg: "Client may proceed to step 2 of DCA signup.", business: cur_auth});
 });
 
-//------SMS VERIFICATION RETURN BODY----//
-// this.body = msgBody;
-// this.created = dateCreated;
-// this.dateSent = dateSent;
-// this.dateUpdated = dateUpdated;
-// this.status = msgStatus;
-// this.sentTo = to;
-// this.hasCallback = withCallback;
-// this.isError = isError;
-// this.errorCode = errorCode;
-// this.errorMsg = errorMsg;
-
 router.get('/signup-dca-step2-1', proceed_to_dca_signup2_1, async (req, res) => {
     let vcode = uuidv4();
     vcode = vcode.substring(0,6);
@@ -139,9 +129,29 @@ router.get('/proceed-dca-signup3', proceed_to_dca_signup3, (req, res) => {
     return res.status(202).json({success: true, msg: "Client may proceed to step 3 of DCA signup.", business: cur_auth});
 });
 
+
 router.get('/signup-dca-final', proceed_to_dca_signup3, (req, res) => {
-    
-})
+    const { 
+        has_dca_license,
+        business_name,
+        permanent_address,
+        coordinates,
+        manager,
+        contact_number,
+        contact_email,
+        business_type,
+    } = req.body;
+
+    const sessData = req.session.dca_search.data;
+    const licenseInfo = {
+        dca_license: sessData.license_nbr,
+        license_status: sessData.license_status,
+        license_type: sessData.license_type,
+        license_creation_date: sessData.license_creation_date,
+        license_expr_date: sessData.lic_expir_dd,
+        license_industry: sessData.industry
+    };
+});
 
 
 
