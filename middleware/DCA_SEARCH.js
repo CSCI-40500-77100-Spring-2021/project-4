@@ -50,6 +50,7 @@ SearchDCALicense = async (license) => {
     });
 
     let searchData = await searchRespose.json();
+    searchData = searchData[0];
     let resSuccess = !searchData.error;
     let noRes = resSuccess && searchData.length < 1;
     let resMsg = resSuccess ? "License match found" : "Something went wrong";
