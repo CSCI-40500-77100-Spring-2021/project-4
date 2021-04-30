@@ -25,7 +25,9 @@ const GeneralBusiness = new Schema({
 
     account_type: {type: String, required: true, default: 'Business'},
     verified: {type: Boolean, required: true, default: false},
-    tfa_otp: {type: String, required: true}
+    tfa_otp: {type: String, required: true},
+
+    password: {type: String, required: true},
 }, baseOptions);
 
 module.exports = Business = mongoose.model('Business', GeneralBusiness);

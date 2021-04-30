@@ -15,6 +15,9 @@ const { SearchDCALicense } = require('../../middleware/DCA_SEARCH');
 const { SendMsgWithCallBack } = require('../../middleware/SMS_VERIFICATION');
 const { CalcTimeInFuture } = require('../../middleware/TIME_FUNCTIONS');
 
+const { JWT_EMAIL_SIGN_KEY } = require('../../configs/app');
+
+
 proceed_to_dca_signup2 = (req, res, next) => {
     if(req.session.dca_search.sms_success) {
         next();
@@ -56,7 +59,7 @@ proceed_to_dca_signup2_2 = (req, res, next) => {
     next();
 }
 proceed_to_dca_signup3 = (req, res, next) => {
-    if(req.session.dca_search.sms_success) {
+    if(req.session.dca_search.sms_success && req.session.dca_search.data) {
         next();
     }
     res.status(401).json({success: false, msg: "Action not permitted, must go through steps 1-2 of DCA verification process."});
@@ -161,10 +164,28 @@ router.get('/signup-dca-final', proceed_to_dca_signup3, (req, res) => {
         return res.status(401).json({success: false, msg: "Please enter all fields."});
     }
 
+    const newBizUser = {
+        has_dca_license,
+        business_name,
+        permanent_address,
+        coordinates,
+        manager,
+        contact_number,
+        contact_email,
+        business_type,
+        ...licenseInfo
+    };
 
-    let newBizz = new Business({
+    // create jwt hash
 
-    });
+    jwt.sign({newBizUser}, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, token) => {
+        if(err) {
+            return res.status(500).json({success: false, msg: "Something went wrong with jwt signing for email verification.", err});
+        }
+
+        
+    })
+    
 });
 
 
