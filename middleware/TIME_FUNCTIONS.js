@@ -4,10 +4,10 @@ CalcTimeInFuture = (delta, units) => {
         case 'hr':
             millisecs_delta = delta * (60000 * 60);
             break;
-        case 'min':
+        case 'mins':
             millisecs_delta = delta * 60000;
             break;
-        case 'sec':
+        case 'secs':
             millisecs_delta = delta * 1000;
             break;
     }

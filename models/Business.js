@@ -19,15 +19,16 @@ const GeneralBusiness = new Schema({
     rating: {type: Schema.Types.Mixed, required: false, default: "N/A"},
     reviews: {type: String, required: false, ref: "Reviews"},
     business_type: {type: String, required: true},
-    timeOpen: {type: String, required: true},
-    timeClose: {type: String, required: true},
-    master_key: {type: String, required: true},
+    timeOpen: {type: String, required: false},
+    timeClose: {type: String, required: false},
+    master_key: {type: String, required: false},
 
     account_type: {type: String, required: true, default: 'Business'},
     verified: {type: Boolean, required: true, default: false},
-    tfa_otp: {type: String, required: true},
+    tfa_otp: {type: String, required: false},
 
-    password: {type: String, required: true},
+    password: {type: String, required: true, default: null},
+    passwordGiven: {type: Boolean, required: true, default: false}
 }, baseOptions);
 
 module.exports = Business = mongoose.model('Business', GeneralBusiness);

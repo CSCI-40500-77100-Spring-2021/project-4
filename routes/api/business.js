@@ -4,6 +4,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
+const sgMail = require('@sendgrid/mail');
 const { v4: uuidv4 } = require('uuid');
 
 const Business = require('../../models/Business');
@@ -11,12 +12,24 @@ const Business = require('../../models/Business');
 const licenseRegex = /^([0-9]{7})(-DCA)$/g;
 const regex = /^([a-zA-Z0-9]+[a-zA-Z0-9.!#$%&'*+\-\/=?^_`{|}~]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})$/g;
 
+const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/g;
+
 const { SearchDCALicense } = require('../../middleware/DCA_SEARCH');
 const { SendMsgWithCallBack } = require('../../middleware/SMS_VERIFICATION');
 const { CalcTimeInFuture } = require('../../middleware/TIME_FUNCTIONS');
+const { configureEmailTemplate } = require('../../middleware/CONFIG_EMAIL_TEMPLATE');
+const { TokenisePayload } = require('../../middleware/HASH_PAYLOAD');
 
-const { JWT_EMAIL_SIGN_KEY } = require('../../configs/app');
+const { JWT_EMAIL_SIGN_KEY, RESEND_PAYLOAD_KEY, PROJECT_EMAIL, CLIENT_ORIGIN } = require('../../configs/app');
 
+verifyToken = (req, res, next) => {
+    // req.token = req.query.token;
+    req.token = req.params.token;
+    if(!req.token || typeof req.token === 'undefined' || typeof req.token === null) {
+        return res.status(403).json({success: false, msg: "Invalid email verification link, or your link has expired."});
+    }
+    next();
+}
 
 proceed_to_dca_signup2 = (req, res, next) => {
     if(req.session.dca_search.sms_success) {
@@ -63,6 +76,12 @@ proceed_to_dca_signup3 = (req, res, next) => {
         next();
     }
     res.status(401).json({success: false, msg: "Action not permitted, must go through steps 1-2 of DCA verification process."});
+}
+proceed_to_dca_signup_final = (req, res, next) => {
+    if(req.session.dca_search.verificationSuccess && req.session.dca_search.prelimVerifiedUser) {
+        next();
+    }
+    res.status(401).json({success: false, msg: "Action not permitted; no proof of email verification success, in session data."});
 }
 
 //Signup with dca license
@@ -134,7 +153,7 @@ router.get('/proceed-dca-signup3', proceed_to_dca_signup3, (req, res) => {
 });
 
 
-router.get('/signup-dca-final', proceed_to_dca_signup3, (req, res) => {
+router.get('/signup-dca-final-1', proceed_to_dca_signup3, (req, res) => {
     const { 
         has_dca_license,
         business_name,
@@ -176,17 +195,194 @@ router.get('/signup-dca-final', proceed_to_dca_signup3, (req, res) => {
         ...licenseInfo
     };
 
-    // create jwt hash
+    Business.findOne({dca_license: licenseInfo.dca_license})
+    .then((bizz) => {
+        if(bizz) {
+            return res.status(403).json({success: false, msg: `A business account already exists with the license: ${licenseInfo.dca_license}`});
+        }
+        else {
+            jwt.sign({newBizUser}, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, token) => {
+                if(err) {
+                    return res.status(500).json({success: false, msg: "Something went wrong with jwt signing for email verification.", err});
+                }
 
-    jwt.sign({newBizUser}, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, token) => {
+                const returnLink = `${CLIENT_ORIGIN}/business-email-verification/${token}`;
+                const htmlContent = configureEmailTemplate(newBizUser.manager, newBizUser.business_name, returnLink);
+                const resendToken = TokenisePayload(newBizUser, RESEND_PAYLOAD_KEY, {expiresIn: '24h'});
+
+                const msg = {
+                    to: newBizUser.contact_email,
+                    from: PROJECT_EMAIL,
+                    subject: 'Your Serve business account, email verification.',
+                    html: htmlContent
+                };
+
+                sgMail.send(msg, (err) => {
+                    if(err) {
+                        return res.status(500).json({success: false, msg: "Something went wrong trying to complete email verification.", err});
+                    }
+                    
+                    const emailCooldown = CalcTimeInFuture(10, 'mins');
+
+                    req.session.dca_search.emailCoolDownExpr = emailCooldown;
+
+                    return res.status(201).json({success: true, msg: "Email verification link successfully sent", resendPayload: resendToken});
+                })
+            })
+        }
+    })
+    .catch(err => {
+        return res.status(500).json({success: false, msg: "Something went wrong trying to complete email verification", err});
+    })
+});
+
+router.get('/signup-dca-resend-verification-email', proceed_to_dca_signup3, (req, res) => {
+    const resend_token = req.body.token;
+
+    if(!resend_token) {
+        return res.status(422).json({success: false, msg: "Something went wrong trying to resend verification email.", err: {msg: 'No resend token provided'}});
+    }
+
+    if(Date.now() =< req.session.dca_search.emailCoolDownExpr) {
+        return res.status(201).json({success: true, msg: "Email verification already sent; cooldown not over", resendPayload: resend_token});
+    }
+
+    const hash = resend_token.substring(0,resend_token.length-(RESEND_PAYLOAD_KEY.length+1));
+
+    jwt.verify(hash, RESEND_PAYLOAD_KEY, {expiresIn: '24h'}, (err, payload) => {
         if(err) {
-            return res.status(500).json({success: false, msg: "Something went wrong with jwt signing for email verification.", err});
+            return res.status(500).json({success: false, msg: "Something went wrong trying to resend verification email.", err});
         }
 
-        
+        const newBizUser = payload.newBizUser;
+        jwt.sign({newBizUser}, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, token) => {
+            if(err) {
+                return res.status(500).json({success: false, msg: "Something went wrong with jwt signing for email verification.", err});
+            }
+
+            const returnLink = `${CLIENT_ORIGIN}/business-email-verification/${token}`;
+            const htmlContent = configureEmailTemplate(newBizUser.manager, newBizUser.business_name, returnLink);
+            const resendToken = TokenisePayload(newBizUser, RESEND_PAYLOAD_KEY, {expiresIn: '24h'});
+
+            const msg = {
+                to: newBizUser.contact_email,
+                from: PROJECT_EMAIL,
+                subject: 'Your Serve business account, email verification.',
+                html: htmlContent
+            };
+
+            sgMail.send(msg, (err) => {
+                if(err) {
+                    return res.status(500).json({success: false, msg: "Something went wrong trying to complete email verification.", err});
+                }
+                const emailCooldown = CalcTimeInFuture(10, 'mins');
+                req.session.dca_search.emailCoolDownExpr = emailCooldown;
+
+                return res.status(201).json({success: true, msg: "Email verification link successfully sent", resendPayload: resendToken});
+            })
+        })
     })
-    
+
 });
+
+router.get('/signup-dca-renew-expired-link', (req, res) => {
+    const token = req.body.token;
+
+    if(!token) {
+        return res.status(422).json({success: false, msg: "Sorry, something went wrong trying to renew expired verification link", err: {msg:"No payload token provided"}});
+    }
+
+    jwt.verify(token, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, payload) => {
+        if(err) {
+            return res.status(500).json({success: false, msg: "Something went wrong trying to resend verification email.", err});
+        }
+
+        const newBizUser = payload.newBizUser;
+        jwt.sign({newBizUser}, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, token) => {
+            if(err) {
+                return res.status(500).json({success: false, msg: "Something went wrong with jwt signing for email verification.", err});
+            }
+
+            const returnLink = `${CLIENT_ORIGIN}/business-email-verification/${token}`;
+            const htmlContent = configureEmailTemplate(newBizUser.manager, newBizUser.business_name, returnLink);
+            const resendToken = TokenisePayload(newBizUser, RESEND_PAYLOAD_KEY, {expiresIn: '24h'});
+
+            const msg = {
+                to: newBizUser.contact_email,
+                from: PROJECT_EMAIL,
+                subject: 'Your Serve business account, email verification.',
+                html: htmlContent
+            };
+
+            sgMail.send(msg, (err) => {
+                if(err) {
+                    return res.status(500).json({success: false, msg: "Something went wrong trying to complete email verification.", err});
+                }
+                const emailCooldown = CalcTimeInFuture(10, 'mins');
+                req.session.dca_search.emailCoolDownExpr = emailCooldown;
+
+                return res.status(201).json({success: true, msg: "Email verification link successfully sent", resendPayload: resendToken});
+            })
+        })
+    })
+});
+
+router.get('/signup-dca-verify-email', verifyToken, (req, res) => {
+    jwt.verify(req.token, JWT_EMAIL_SIGN_KEY, {expiresIn: '24h'}, (err, payload) => {
+        if(err) {
+            return res.status(500).json({success: false, msg: "Something went wrong trying to verify your account email.", err});
+        }
+
+        let newBizUser = payload.newBizUser;
+
+        Business.findOne({dca_license: newBizUser.dca_license})
+        .then((bizz) => {
+            if(bizz) {
+                return res.status(403).json({success: false, msg: "Ivalid/expired verification link; business account already exists with that license."});
+            }
+
+            let noPassBizzUser = new Business({
+                ...newBizUser,
+                verified: true,
+                passwordGiven: false
+            });
+
+            noPassBizzUser.save()
+            .then(bus => {
+                req.session.dca_search.prelimVerifiedUser = bus;
+                req.session.dca_search.verificationSuccess = true;
+
+                return res.status(201).json({success: true, msg: "Successfully verified business email; may proceed to provide passwords.", business: bus});
+            })
+            .catch(err => {
+                if(Object.entries(err).length > 0) {
+                    return res.status(500).json({success: false, msg: "Something went wrong, couldn't verify accout.", err});
+                }
+            })
+
+        })
+        .catch(err => {
+            return res.status(500).json({success: false, msg: "Something went wrong trying to  verify account.", err});
+        })
+    })
+});
+
+router.get('/signup-dca-final-1', proceed_to_dca_signup_final, (req, res) => {
+    const { password, confirmPassword } = req.body;
+    if(!password || !confirmPassword || password.trim().length === 0 || confirmPassword.trim().length === 0) {
+        return res.status(422).json({success: false, msg: "Please complete both password fields!"});
+    }
+    if(password.trim() !== confirmPassword.trim()) {
+        return res.status(422).json({success: false, msg: "Passwords must match!"});
+    }
+    if(!passwordRegex.test(password)) {
+        return res.status(422).json({success: false, msg: "Passwords must be at least 8 characters long, and must inlcude at least 1 capital letter, 1 lowercase letter, and a number."})
+    }
+
+    
+})
+
+
 
 
 

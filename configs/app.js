@@ -21,6 +21,8 @@ module.exports = {
     TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID, 
     TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
     JWT_EMAIL_SIGN_KEY: process.env.JWT_EMAIL_SIGN_TOKEN,
+    RESEND_PAYLOAD_KEY: process.env.RESEND_PAYLOAD_KEY,
+    PROJECT_EMAIL: process.env.GMAIL_ACCOUNT,
 
     IN_PROD,
     PORT,
