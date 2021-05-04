@@ -83,6 +83,12 @@ proceed_to_dca_signup_final = (req, res, next) => {
     }
     res.status(401).json({success: false, msg: "Action not permitted; no proof of email verification success, in session data."});
 }
+proceed_tfa_login = (req, res, next) => {
+    if(!req.user || !req.session.passport.user || !req.session.tfa_otp) {
+        return res.status(403).json({success: false, msg: "Must complete first layer of authentiation before TFA"});
+    }
+    next();
+}
 
 //Signup with dca license
 router.get('/signup-dca-step1', async (req, res) => {
@@ -430,7 +436,21 @@ router.get('/signup-dca-final-2', proceed_to_dca_signup_final, (req, res) => {
     
 });
 
+router.post('login-with-email1', (req, res) => {
 
+});
+
+router.post('/login-with-email2', proceed_tfa_login, (req, res) => {
+
+});
+
+router.post('/login-with-phone1', (req, res) => {
+
+});
+
+router.post('/login-with-phone2', proceed_tfa_login, (req, res) => {
+    
+})
 
 
 

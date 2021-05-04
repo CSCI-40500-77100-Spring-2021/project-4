@@ -14,14 +14,14 @@ function SessionConstructor(user_id, account_type) {
 }
 
 module.exports = (passport) => {
-    passport.use('business-login', new LocalStrategy( {usernameField: 'phone'}, (phone, password, done) => {
+    passport.use('businessP-login', new LocalStrategy( {usernameField: 'phone'}, (phone, password, done) => {
         Business.findOne({contact_number: phone})
         .then(user => {
             if(!user) {
                 return done(null, false, {msg: 'Phone number is not registered'});
             }
-            if(!user.verified) {
-                return done(null, false, {msg: 'Account must be verified to continue.'});
+            if(!user.verified || !user.passwordGiven) {
+                return done(null, false, {msg: 'Account must be verified, and password protected to continue'});
             }
 
             bcrypt.compare(password.trim(), user.password, (err, isMatch) => {
@@ -37,6 +37,30 @@ module.exports = (passport) => {
             })
         })
     }));
+
+    passport.use('businessE-login', new LocalStrategy({usernameField: 'email'}, (email, password, done) => {
+        Business.findOne({contact_email: email})
+        .then(user => {
+            if(!user) {
+                return done(null, false, {msg: 'Email is not registerd, or linked to an existing account'});
+            }
+            if(!user.verified || !user.passwordGiven) {
+                return done(null, false, {msg: 'Account must be verified, and password protected to continue'});
+            }
+
+            bcrypt.compare(password.trim(), user.password, (err, isMatch) => {
+                if(err) {
+                    throw err;
+                }
+                if(isMatch) {
+                    return done(null, user);
+                }
+                else {
+                    return done(null, false, {msg: 'Password is incorrect'});
+                }
+            })
+        })
+    }))
 
     passport.use('customerP-login', new LocalStrategy ( {usernameField: 'phone'}, (phone, password, done) => {
         Customer.findOne({phone_number: phone})
@@ -93,7 +117,7 @@ module.exports = (passport) => {
             return done(null, false, {msg: 'First auth layer not passed.'});
         }
         if(!req.session.tfa_otp) {
-            return done(null, false, {msg: 'No tfa_otp in session'});
+            return done(null, false, {msg: 'No tfa_otp in session; first auth layer must be passed.'});
         }
         if((req.session.tfa_otp === req.user.tfa_otp) && (req.session.tfa_otp === req.body.tfa_otp)) {
             return done(null, user);
