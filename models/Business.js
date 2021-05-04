@@ -21,7 +21,7 @@ const GeneralBusiness = new Schema({
     business_type: {type: String, required: true},
     timeOpen: {type: String, required: false},
     timeClose: {type: String, required: false},
-    master_key: {type: String, required: false},
+    master_key: {type: String, required: true},
 
     account_type: {type: String, required: true, default: 'Business'},
     verified: {type: Boolean, required: true, default: false},

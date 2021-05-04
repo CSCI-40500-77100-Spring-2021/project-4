@@ -341,24 +341,35 @@ router.get('/signup-dca-verify-email', verifyToken, (req, res) => {
                 return res.status(403).json({success: false, msg: "Ivalid/expired verification link; business account already exists with that license."});
             }
 
-            let noPassBizzUser = new Business({
+            // let noPassBizzUser = new Business({
+            //     ...newBizUser,
+            //     verified: true,
+            //     passwordGiven: false
+            // });
+
+            // noPassBizzUser.save()
+            // .then(bus => {
+                // req.session.dca_search.prelimVerifiedUser = bus;
+                // req.session.dca_search.verificationSuccess = true;
+
+                // return res.status(201).json({success: true, msg: "Successfully verified business email; may proceed to provide passwords.", business: bus});
+            // })
+            // .catch(err => {
+            //     if(Object.entries(err).length > 0) {
+            //         return res.status(500).json({success: false, msg: "Something went wrong, couldn't verify accout.", err});
+            //     }
+            // })
+
+            let noPassBizzUser = {
                 ...newBizUser,
                 verified: true,
                 passwordGiven: false
-            });
+            };
 
-            noPassBizzUser.save()
-            .then(bus => {
-                req.session.dca_search.prelimVerifiedUser = bus;
-                req.session.dca_search.verificationSuccess = true;
+            req.session.dca_search.prelimVerifiedUser = noPassBizzUser;
+            req.session.dca_search.verificationSuccess = true;
 
-                return res.status(201).json({success: true, msg: "Successfully verified business email; may proceed to provide passwords.", business: bus});
-            })
-            .catch(err => {
-                if(Object.entries(err).length > 0) {
-                    return res.status(500).json({success: false, msg: "Something went wrong, couldn't verify accout.", err});
-                }
-            })
+            return res.status(201).json({success: true, msg: "Successfully verified business email; may proceed to provide passwords.", business: noPassBizzUser});
 
         })
         .catch(err => {
@@ -367,8 +378,9 @@ router.get('/signup-dca-verify-email', verifyToken, (req, res) => {
     })
 });
 
-router.get('/signup-dca-final-1', proceed_to_dca_signup_final, (req, res) => {
+router.get('/signup-dca-final-2', proceed_to_dca_signup_final, (req, res) => {
     const { password, confirmPassword } = req.body;
+    const prelimBussUser = req.session.dca_search.prelimVerifiedUser;
     if(!password || !confirmPassword || password.trim().length === 0 || confirmPassword.trim().length === 0) {
         return res.status(422).json({success: false, msg: "Please complete both password fields!"});
     }
@@ -379,8 +391,46 @@ router.get('/signup-dca-final-1', proceed_to_dca_signup_final, (req, res) => {
         return res.status(422).json({success: false, msg: "Passwords must be at least 8 characters long, and must inlcude at least 1 capital letter, 1 lowercase letter, and a number."})
     }
 
+    bcrypt.genSalt(10, (err, salt) => {
+        if(err) {
+            return res.status(500).json({success: false, msg: "Something went wrong; error hashing password", err});
+        }
+        bcrypt.hash(password, salt, (err, hash) => {
+            if(err) {
+                return res.status(500).json({success: false, msg: "Something went wrong; error hashing password", err});
+            }
+
+            const validBusinessUser = new Business({
+                ...prelimBussUser,
+                password: hash,
+                passwordGiven: true,
+                verified: true
+            });
+
+            let randomid  = uuidv4();
+            
+            jwt.sign({validBusinessUser}, randomid, {}, (err, token) => {
+                if(err) {
+                    return res.status(500).json({success: false, msg: "Something went wrong; error creating master key.", err});
+                }
+
+                validBusinessUser.master_key = token;
+
+                validBusinessUser.save()
+                .then(validUser => {
+                    delete req.session.dca_search;
+                    return res.status(200).json({success: true, msg: "Successful complete business user registration.", business: validUser});
+                })
+                .catch(err => {
+                    return res.status(500).json({success: false, msg: "Something went wrong; error saving valid user.", err});
+                })
+            })
+        })
+    })
     
-})
+});
+
+
 
 
 
