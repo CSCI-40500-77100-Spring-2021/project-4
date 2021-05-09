@@ -90,7 +90,7 @@ proceed_tfa_login = (req, res, next) => {
     next();
 }
 
-//Signup with dca license
+/*DCA LICENSE AUTHENTICATION */
 router.get('/signup-dca-step1', async (req, res) => {
     delete req.session.dca_search;
 
@@ -435,6 +435,20 @@ router.get('/signup-dca-final-2', proceed_to_dca_signup_final, (req, res) => {
     })
     
 });
+
+/*UBER BUSINESS AUTHENTICATION */
+
+
+
+
+
+
+
+
+
+
+
+
 
 router.post('login-with-email1', (req, res) => {
 
