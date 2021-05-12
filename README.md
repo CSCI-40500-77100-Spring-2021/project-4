@@ -57,3 +57,41 @@ docker pull serveappproj4dev/project4-backend
 docker run serveappproj4dev/project4-backend 
 ```
 the above will start a full nodejs, expressjs, redis server, using redis for session management, and a mongodb image for to connect via mongoose
+
+
+## Microservices
+#### OTP Email Microservice
+
+![email_microservice](https://user-images.githubusercontent.com/29417661/118018954-6cc65b00-b326-11eb-855a-c8c7225c3bd6.png)
+
+* The microservice implemented is a smaller component of our greater monolithic backend server. The self-contained service's solre responsibility is to email a one time password (OTP) to the given user email, which will then be used in the greater task of authenticating the user (specifically the Two-Factor Authentication portion). The service can be accessed publically via three ways; one, in usage of the web app while the user is attempting to login or signup, the service will be called via the REST API to send the user a OTP which'll be used for TFA. Two, via the PWA, which is similar in usage to the web app. Three, via curl, or postman, or similar API testing platforms to postman.
+
+* **Instructions on testing (with CURL):**
+```
+ curl --header "Content-Type: application/json" \
+ --request POST --data '{"to":"[RECEIVER'S EMAIL]","name":"[RECEIVER'S NAME]","expr": [INTEGER for time in minutes]}' \
+ https://safe-journey-69480.herokuapp.com/api/email/send-email
+```
+> **Example:**
+```
+curl --header "Content-Type: application/json" \
+ --request POST --data '{"to":"williamd8323@afsenyc.org","name":"William","expr": 10}' \
+ https://safe-journey-69480.herokuapp.com/api/email/send-email
+```
+Where `[RECEIVER'S EMAIL]`, `[RECEIVER'S NAME]`, and `[INTEGER for time in minutes]` represent the email recepient's email, name, and number of minutes the OTP remains valid, respectively.
+A successful request will return a json response of `{success: true, msg: "An email has been sent to [RECEIVER'S EMAIL]"}`, where `RECEIVER'S EMAIL` again is the email provided in the request body.
+If another request is made before the previous OTP expires, a json response is returned indicating that an email has already been sent within `[INTEGER for time in minutes]` duration.
+If any of the fields aren't provided in the request body, a json response is returned indicating to do so.
+The request may take up to a few minutes due to cold starts
+
+**Data consistency:**
+
+The service uses the individual user session store implemented with redis, but when accessed from the web app or PWA, in addition to the session store, a single Mongodb database is used to store all the currently unexpired user OTP, to keep track of the emailed 2FA codes even when the user session is terminated. Write access to this Mongodb database is limited to the emailing service, but, however, the greater monolithic server also has read access.
+
+**Microservice characteristics:**
+
+This service is self-contained; it runs on its own http server, it's been built from a docker image, containerised using docker, and deployed onto heroku as a containerised app. This service is light-weight, as its only responsibility is to take a user's name, and email, and send them an OTP. This service may be implemented into any othe project, because the rest API can be called in any other web programming language capable, thus implementation idependent. This service is independently deployable as it can work, and run independently of a greater project. This service can also be run as a business that people can pay for, as emailing OTP for authentication is becoming more frequent in most modern web apps, and mobile apps.
+
+**How service is called:**
+
+Service is called Asynchronously from the web app as the entire authentication of a user is contingent, on them successfully receiving the OTP to proceed with two factor authentication. 
