@@ -79,7 +79,7 @@ curl --header "Content-Type: application/json" \
  https://safe-journey-69480.herokuapp.com/api/email/send-email
 ```
 Where `[RECEIVER'S EMAIL]`, `[RECEIVER'S NAME]`, and `[INTEGER for time in minutes]` represent the email recepient's email, name, and number of minutes the OTP remains valid, respectively.
-A successful request will return a json response of `{success: true, msg: "An email has been sent to [RECEIVER'S EMAIL]"}`, where `RECEIVER'S EMAIL` again is the email provided in the request body.
+A successful request will return a json response of `{success: true, msg: "An email has been sent to [RECEIVER'S EMAIL]"}`, where `RECEIVER'S EMAIL` again is the email provided in the request body, and the recepient would receive an email with the OTP from `appserveproject@gmail.com` the temporary project email.
 If another request is made before the previous OTP expires, a json response is returned indicating that an email has already been sent within `[INTEGER for time in minutes]` duration.
 If any of the fields aren't provided in the request body, a json response is returned indicating to do so.
 The request may take up to a few minutes due to cold starts
