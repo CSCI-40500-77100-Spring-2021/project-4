@@ -14,7 +14,7 @@ function SessionConstructor(user_id, account_type) {
 }
 
 module.exports = (passport) => {
-    passport.use('businessP-login', new LocalStrategy( {usernameField: 'phone'}, (phone, password, done) => {
+    passport.use('businessP-login', new LocalStrategy({usernameField: 'phone'}, (phone, password, done) => {
         Business.findOne({contact_number: phone})
         .then(user => {
             if(!user) {
@@ -62,7 +62,7 @@ module.exports = (passport) => {
         })
     }))
 
-    passport.use('customerP-login', new LocalStrategy ( {usernameField: 'phone'}, (phone, password, done) => {
+    passport.use('customerP-login', new LocalStrategy ({usernameField: 'phone'}, (phone, password, done) => {
         Customer.findOne({phone_number: phone})
         .then(user => {
             if(!user) {
@@ -86,7 +86,7 @@ module.exports = (passport) => {
         })
     }));
 
-    passport.use('customerE-login', new LocalStrategy ( {usernameField: 'email'}, (email, password, done) => {
+    passport.use('customerE-login', new LocalStrategy ({usernameField: 'email'}, (email, password, done) => {
         Customer.findOne({email: email})
         .then(user => {
             if(!user) {

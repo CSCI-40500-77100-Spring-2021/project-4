@@ -10,36 +10,40 @@ const { CalcTimeInFuture } = require('../middleware/timefunctions');
 const regex = /^([a-zA-Z0-9]+[a-zA-Z0-9.!#$%&'*+\-\/=?^_`{|}~]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})$/g;
 const regex2 = /^([a-zA-Z0-9]+[a-zA-Z0-9.!#$%&'*+\-\/=?^_`{|}~]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})$/g;
 
-const SENDGRID_APIKEY = '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';
+const SENDGRID_APIKEY = process.env.SENDGRID_APIKEY;
 
 checkThings = (req, res, next) => {
     let toEmail = req.body.to;
-    let fromEmail = req.body.from;
+    // let fromEmail = req.body.from;
 
     if(!regex.test(toEmail)) {
         return res.status(422).json({success: false, msg: "Please enter a valid email for the receiver."});
     }
-    if(!regex2.test(fromEmail)) {
-        return res.status(422).json({success: false, msg: "Please enter a valid email for the sender."});
-    }
-    if(typeof req.body.expr !== 'number' || !req.body.expr) {
+    // if(!regex2.test(fromEmail)) {
+    //     return res.status(422).json({success: false, msg: "Please enter a valid email for the sender."});
+    // }
+    else if(typeof req.body.expr !== 'number' || !req.body.expr) {
         return res.status(422).json({success: false, msg: "The value for expr must be a number"});
     }
-    if(!req.body.name || typeof req.body.name !== 'string') {
+    else if(!req.body.name || typeof req.body.name !== 'string') {
         return res.status(422).json({success: false, msg: "The value for name must be a string"});
     }
-    if(req.session.email_cooldown && req.session.email_cooldown.email === toEmail && req.session.email_cooldown.expr > Date.now()) {
+    else if(req.session.email_cooldown_email && req.session.email_cooldown_email === toEmail && req.session.email_cooldown_expr > Date.now()) {
         return res.status(422).json({success: false, msg: "An email has already been sent within the past 10 minutes; code is still valid."});
     }
-    if(req.session.email_cooldown && req.session.email_cooldown.email === toEmail && req.session.email_cooldown.expr <= Date.now()) {
-        delete req.session.email_cooldown;
+    // if(req.session.email_cooldown_email && req.session.email_cooldown_email === toEmail && req.session.email_cooldown_expr <= Date.now()) {
+    //     delete req.session.email_cooldown_email;
+    //     delete req.session.email_cooldown_expr;
+    //     next();
+    // }
+    else {
+        delete req.session.email_cooldown_email;
+        delete req.session.email_cooldown_expr;
         next();
     }
-    next();
 }
 
 router.post('/send-email', checkThings, (req, res) => {
-    console.log(req.body);
     let code = uuidv4();
     code = code.substring(0,6);
 
@@ -49,8 +53,9 @@ router.post('/send-email', checkThings, (req, res) => {
 
     sgMail.setApiKey(SENDGRID_APIKEY);
 
-    let sender = req.body.from;
+    let sender = process.env.project_email;
     let receiver = req.body.to;
+    // console.log(req.body, sender);
 
     const msg = {
         to: receiver,
@@ -62,8 +67,9 @@ router.post('/send-email', checkThings, (req, res) => {
         if(Object.entries(err).length > 0) {
             return res.status(500).json({success: false, msg: "Something went wrong; couldn't send email.", err});
         }
-
-        return res.status(200).json({success: true, msg: `An email has been sent to ${req.body.to}`, result});
+        req.session.email_cooldown_email = receiver;
+        req.session.email_cooldown_expr = exprTime;
+        return res.status(200).json({success: true, msg: `An email has been sent to ${req.body.to}`});
     })
 })
 

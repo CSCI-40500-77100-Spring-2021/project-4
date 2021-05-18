@@ -22,6 +22,14 @@ const { TokenisePayload } = require('../../middleware/HASH_PAYLOAD');
 
 const { JWT_EMAIL_SIGN_KEY, RESEND_PAYLOAD_KEY, PROJECT_EMAIL, CLIENT_ORIGIN } = require('../../configs/app');
 
+const ERROR_PARTITION = ['no input', 'wrong password', 'unregisterd email', 'invalid email format'];
+
+
+checkLoginSessionError = (req, res, next) => {
+    const { email } = req.body;
+
+}
+
 verifyToken = (req, res, next) => {
     // req.token = req.query.token;
     req.token = req.params.token;
@@ -249,7 +257,7 @@ router.get('/signup-dca-resend-verification-email', proceed_to_dca_signup3, (req
         return res.status(422).json({success: false, msg: "Something went wrong trying to resend verification email.", err: {msg: 'No resend token provided'}});
     }
 
-    if(Date.now() =< req.session.dca_search.emailCoolDownExpr) {
+    if(Date.now() <= req.session.dca_search.emailCoolDownExpr) {
         return res.status(201).json({success: true, msg: "Email verification already sent; cooldown not over", resendPayload: resend_token});
     }
 
@@ -438,6 +446,20 @@ router.get('/signup-dca-final-2', proceed_to_dca_signup_final, (req, res) => {
 
 /*UBER BUSINESS AUTHENTICATION */
 
+//Navigate to 'Login with Uber page' -->
+//Upon 'Login button click' -->
+//Navigate to "https://login.uber.com/oauth/v2/authorize?response_type=code&scope=eats.pos_provisioning&client_id={client_id}&redirect_uri={redirect_uri}"
+//with scope :
+/*
+Scope	                       Grant Type	         Description
+eats.store	                 client-credentials	    Indicates a token has permission to update and retrieve store and menu information.
+eats.store.status.write	     client-credentials	    Indicates a token has permission to set store availability (pause/unpause stores without changing menu hours).
+eats.order	                 client-credentials	    Indicates a token has permission to accept/deny/cancel orders and read v1 orders.
+eats.store.orders.read	     client-credentials	    Indicates a token has permission to read v2 orders.
+eats.report	                 client-credentials	    Indicates a token has permission to generate reports (e.g. transaction reports) for stores.
+eats.pos_provisioning	     authorization-code	    Indicates a token has permission to setup/remove pos integration and retrieve stores.
+*/
+//GET reditecturi?code={authcode form previous route}
 
 
 
@@ -449,9 +471,38 @@ router.get('/signup-dca-final-2', proceed_to_dca_signup_final, (req, res) => {
 
 
 
+/*AUTHENTICATING ALL BUSINESSES */
 
 router.post('login-with-email1', (req, res) => {
+    const { email, pass } = req.body;
+    let errReason = null;
+    let errEmail = null;
+    //Check inputs validity
+    if(!email || !pass || email.trim().length() < 1 || pass.trim().length() < 1) {
+        errReason = ERROR_PARTITION[0];
+        errEmail = email;
 
+        req.session.loginErr = {};
+        req.session.loginErr.email = errEmail;
+        req.session.loginErr.reason = errReason;
+        return res.status(422).json({success: false, msg: "Please enter all required inputs"});
+    }
+    if(!regex.test(email)) {
+        return res.status(422).json({success: false, msg: "Please enter a valid email address"});
+    }
+
+    Business.findOne({email:email})
+    .then(biss => {
+        if(!biss) {
+            // do some caching to check future errors
+            return res.status(401).json({success: false, msg: "Provided email is not registered"});
+        }
+        //authenticate passport email login, and send OTP in callback
+
+    })
+    .catch(err => {
+        return res.status(401).json({success: false, msg: "Something went wrong trying to login.", err})
+    })
 });
 
 router.post('/login-with-email2', proceed_tfa_login, (req, res) => {
