@@ -95,3 +95,6 @@ This service is self-contained; it runs on its own http server, it's been built 
 **How service is called:**
 
 Service is called Asynchronously from the web app as the entire authentication of a user is contingent, on them successfully receiving the OTP to proceed with two factor authentication. 
+
+## Security / Privacy
+A Terms and Conditions document has been added to our site. This document was generated with [Termly](https://termly.io/).
