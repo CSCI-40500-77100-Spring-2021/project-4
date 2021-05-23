@@ -1,3 +1,5 @@
+# [![CI Frontend](https://github.com/CSCI-40500-77100-Spring-2021/project-4/actions/workflows/main.yml/badge.svg)](https://github.com/CSCI-40500-77100-Spring-2021/project-4/actions/workflows/main.yml)
+
 # Serve (project-4)
 > A web app aiming to help aliviate food waste.
 
