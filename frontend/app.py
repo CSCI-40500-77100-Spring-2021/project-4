@@ -43,5 +43,9 @@ def cart():
 def profile():
     return render_template("restaurantProfile.html")
 
+@app.route("/terms")
+def terms():
+    return render_template("TermsConditions.html")
+
 if __name__ == '__main__':
     app.run(debug=True)
