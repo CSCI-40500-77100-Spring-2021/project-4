@@ -17,4 +17,4 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f frontend/requirements.txt ]; then pip install -r frontend/requirements.txt; fi
     - name: Run Test
-      run: python frontend/tests/testRunner.py
+      run: python frontend/testRunner.py
