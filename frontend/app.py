@@ -24,7 +24,6 @@ def userRegistration():
         
         #At least 1 @ and 1 period
         email_regex = "[^@]+@[^@]+\.[^@]+"
-        print(email)
         if re.search(email_regex, email) == None:
             abort(404)
 
