@@ -15,20 +15,14 @@ const regex = /^([a-zA-Z0-9]+[a-zA-Z0-9.!#$%&'*+\-\/=?^_`{|}~]+)@([a-zA-Z0-9.-]+
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/g;
 
 const { SearchDCALicense } = require('../../middleware/DCA_SEARCH');
-const { SendMsgWithCallBack } = require('../../middleware/SMS_VERIFICATION');
+const { SendMsgWithCallBack, SendMsgNoCallback } = require('../../middleware/SMS_VERIFICATION');
 const { CalcTimeInFuture } = require('../../middleware/TIME_FUNCTIONS');
 const { configureEmailTemplate } = require('../../middleware/CONFIG_EMAIL_TEMPLATE');
 const { TokenisePayload } = require('../../middleware/HASH_PAYLOAD');
 
-const { JWT_EMAIL_SIGN_KEY, RESEND_PAYLOAD_KEY, PROJECT_EMAIL, CLIENT_ORIGIN } = require('../../configs/app');
+const { JWT_EMAIL_SIGN_KEY, RESEND_PAYLOAD_KEY, PROJECT_EMAIL, CLIENT_ORIGIN, BACKEND_ORIGIN, DCA_TEST_USER } = require('../../configs/app');
 
-const ERROR_PARTITION = ['no input', 'wrong password', 'unregisterd email', 'invalid email format'];
-
-
-checkLoginSessionError = (req, res, next) => {
-    const { email } = req.body;
-
-}
+const ERROR_PARTITION = ['no input', 'wrong password', 'unregisterd email', 'invalid email format', 'too many wrong attempts'];
 
 verifyToken = (req, res, next) => {
     // req.token = req.query.token;
@@ -40,19 +34,28 @@ verifyToken = (req, res, next) => {
 }
 
 proceed_to_dca_signup2 = (req, res, next) => {
+    if(!req.session.dca_search) {
+        return res.status(401).json({success: false, msg: "Primary authentication steps must be completed!"});
+    }
     if(req.session.dca_search.sms_success) {
         next();
     }
-    if(req.session.dca_search.success && req.session.dca_search.license === req.body.license && req.session.dca_search.data) {
+    if(req.session.dca_search.success && req.session.dca_search.license === req.body.license_nbr && req.session.dca_search.data) {
         next();
     }
-    return res.status(401).json({success: false, msg: "Action not permitted; DCA license must be searched first."});
+    else {
+        // console.log(req.session);
+        return res.status(401).json({success: false, msg: "Action not permitted; DCA license must be searched first."});
+    }
 }
 proceed_to_dca_signup2_1 = (req, res, next) => {
+    if(!req.session.dca_search) {
+        return res.status(401).json({success: false, msg: "Primary authentication steps must be completed!"});
+    }
     if(req.session.dca_search.sms_success) {
         next();
     }
-    if(!req.session.dca_search.success || req.session.dca_search.license !== req.body.license || req.session.dca_search.data) {
+    if(!req.session.dca_search.success || req.session.dca_search.license !== req.body.license_nbr || !req.session.dca_search.data) {
         return res.status(401).json({success: false, msg: "Action not permitted; DCA license must be searched first."});
     }
     else if(req.session.dca_search.ver_code && req.session.dca_search.ver_code.code && req.session.dca_search.ver_code.expr > Date.now()) {
@@ -67,6 +70,9 @@ proceed_to_dca_signup2_1 = (req, res, next) => {
     }
 }
 proceed_to_dca_signup2_2 = (req, res, next) => {
+    if(!req.session.dca_search) {
+        return res.status(401).json({success: false, msg: "Primary authentication steps must be completed!"});
+    }
     if(req.session.dca_search.sms_success) {
         next();
     }
@@ -80,12 +86,18 @@ proceed_to_dca_signup2_2 = (req, res, next) => {
     next();
 }
 proceed_to_dca_signup3 = (req, res, next) => {
+    if(!req.session.dca_search) {
+        return res.status(401).json({success: false, msg: "Primary authentication steps must be completed!"});
+    }
     if(req.session.dca_search.sms_success && req.session.dca_search.data) {
         next();
     }
     res.status(401).json({success: false, msg: "Action not permitted, must go through steps 1-2 of DCA verification process."});
 }
 proceed_to_dca_signup_final = (req, res, next) => {
+    if(!req.session.dca_search) {
+        return res.status(401).json({success: false, msg: "Primary authentication steps must be completed!"});
+    }
     if(req.session.dca_search.verificationSuccess && req.session.dca_search.prelimVerifiedUser) {
         next();
     }
@@ -107,6 +119,11 @@ router.get('/signup-dca-step1', async (req, res) => {
         return res.status(422).json({success: false, msg: 'Please provide a valid DCA license'});
     }
 
+    if(license === DCA_TEST_USER.license_nbr) {
+        req.session.dca_search = {success: true, license: DCA_TEST_USER.license_nbr, data: DCA_TEST_USER};
+        return res.status(202).json({success: true, msg: "Matching business found!", business: DCA_TEST_USER});
+    }
+
     let dca_search_res = await SearchDCALicense(license);
 
     if(dca_search_res.matchFound()) {
@@ -120,6 +137,7 @@ router.get('/signup-dca-step1', async (req, res) => {
 
 router.get('/proceed-dca-signup2', proceed_to_dca_signup2, (req, res) => {
     const cur_auth = req.session.dca_search.data;
+    // console.log(req.session);
     // delete req.session.dca_search;
 
     return res.status(202).json({success: true, msg: "Client may proceed to step 2 of DCA signup.", business: cur_auth});
@@ -132,9 +150,9 @@ router.get('/signup-dca-step2-1', proceed_to_dca_signup2_1, async (req, res) => 
     
     const verification_body = `Your DCA license verification code is: ${vcode}`;
     const verification_to = req.session.dca_search.data.contact_phone;
-    const verification_cbroute = '/handle-dca-sms-fail';
+    const verification_cbroute = `${BACKEND_ORIGIN}/api/business/handle-dca-sms-callback`;
 
-    let sms_res = await SendMsgWithCallBack(verification_body, verification_to, verification_cbroute); //params: body, to, callback_route
+    let sms_res = await SendMsgNoCallback(verification_body, verification_to); //params: body, to, callback_route
 
     if(sms_res.isError) {
         return res.status(422).json({success: false, msg:`${sms_res.errorCode} ${sms_res.errorMsg}`, msg_info: sms_res});
@@ -474,34 +492,32 @@ eats.pos_provisioning	     authorization-code	    Indicates a token has permissi
 /*AUTHENTICATING ALL BUSINESSES */
 
 router.post('login-with-email1', (req, res) => {
-    const { email, pass } = req.body;
-    let errReason = null;
-    let errEmail = null;
-    //Check inputs validity
-    if(!email || !pass || email.trim().length() < 1 || pass.trim().length() < 1) {
-        errReason = ERROR_PARTITION[0];
-        errEmail = email;
+    const { email, password } = req.body;
 
-        req.session.loginErr = {};
-        req.session.loginErr.email = errEmail;
-        req.session.loginErr.reason = errReason;
-        return res.status(422).json({success: false, msg: "Please enter all required inputs"});
+    if(!email || !password || email.trim().length() === 0 || password.trim().length() === 0) {
+        return res.status(401).json({success: false, msg: "Please provide all required fields."});
     }
     if(!regex.test(email)) {
-        return res.status(422).json({success: false, msg: "Please enter a valid email address"});
+        return res.status(422).json({success: false, msg: "Please provide a valid email address."});
     }
 
-    Business.findOne({email:email})
-    .then(biss => {
-        if(!biss) {
-            // do some caching to check future errors
-            return res.status(401).json({success: false, msg: "Provided email is not registered"});
+    Business.findOne({contact_email: email})
+    .then(business => { 
+        if(!business) {
+            return res.status(401).json({success: false, msg: "This email is not registered!"});
         }
-        //authenticate passport email login, and send OTP in callback
+
+        //inputs validated, and email is registered.
+        passport.authenticate('businessE-login', (err, user, info) => {
+            console.log('ERR:', err);
+            console.log('USER:', user);
+            console.log('INFO:', info);
+            return res.status(400).json({msg: 'testing passport authenticate', info});
+        })
 
     })
     .catch(err => {
-        return res.status(401).json({success: false, msg: "Something went wrong trying to login.", err})
+        return res.status(500).json({success: false, msg: "Something went wrong attempting to login", err});
     })
 });
 
@@ -517,6 +533,28 @@ router.post('/login-with-phone2', proceed_tfa_login, (req, res) => {
     
 })
 
+
+/* TWILIO SMS CALLBACK HANDLER */
+router.post('/handle-dca-sms-callback', (req, res) => {
+    const {
+        SmsSid,
+        SmsStatus,
+        MessageStatus,
+        To,
+        MessageSid,
+        AccountSid,
+        From,
+        ApiVersion
+    } = req.body;
+
+    if(!SmsSid || !SmsStatus || !MessageStatus || !To || !MessageSid || !AccountSid || !From || !ApiVersion) {
+        return res.status(202).json({success: false, msg: "NO SMS CALLBACK RESPONSE", sms_status: {}})
+    }
+
+    return res.status(202).json({success: SmsStatus === "delivered" ? true: false, msg: "SMS_CALLBACK RESPONSE", sms_status: {SmsSid, SmsStatus, MessageStatus, To, MessageSid, AccountSid, From, ApiVersion}});
+})
+
+module.exports = router;
 
 
 

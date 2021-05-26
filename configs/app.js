@@ -8,7 +8,23 @@ const CLIENT_ORIGIN = process.env.NODE_ENV === 'production'
   ? process.env.CLIENT_ORIGIN
   : 'http://localhost:3000';
 
+const BACKEND_ORIGIN = process.env.NODE_ENV === 'production' ? process.env.BACKEND_ORIGIN : 'http://localhost:5000';
+
 const SENDGRID_KEY = process.env.NODE_ENV === 'production' ? process.env.SENDGRID_KEY_PROD : process.env.SENDGRID_KEY_DEV;
+
+const DCA_TEST_USER = {
+  license_nbr: process.env.FAKE_DCA_LICENSE,
+  license_type: process.env.FAKE_DCA_TYPE,
+  lic_expir_dd: process.env.FAKE_DCA_EXPR,
+  license_status: process.env.FAKE_DCA_STATUS,
+  license_creation_date: process.env.FAKE_DCA_CREATE,
+  industry: process.env.FAKE_DCA_INDUSTRY,
+  business_name: process.env.FAKE_DCA_BUSINESS_NAME,
+  address_city: process.env.FAKE_DCA_CITY,
+  address_state: process.env.FAKE_DCA_STATE,
+  address_zip: process.env.FAKE_DCA_ZIP,
+  contact_phone: process.env.FAKE_DCA_NUMBER
+};
 
 module.exports = {
     OPEN_DATA_KEY: process.env.OPEN_DATA_KEY,
@@ -28,7 +44,10 @@ module.exports = {
     PORT,
     MONGO_URI,
     CLIENT_ORIGIN,
-    SENDGRID_KEY
+    BACKEND_ORIGIN,
+    SENDGRID_KEY,
+
+    DCA_TEST_USER
 };
 
 

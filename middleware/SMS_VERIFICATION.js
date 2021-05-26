@@ -93,8 +93,11 @@ SendMsgNoCallback = async (body, to) => {
         to: to
     });
 
+    console.log(sendMsg);
+
     let msgResp = await sendMsg.toJSON();
-    let twilResp = new TwilioResponse(msgResp.body, msgResp.date_created, msgResp.date_sent, msgResp.date_updated, msgResp.status, msgResp.to, false, msgResp.error_code !== null, msgResp.error_code, msgResp.error_msg);
+    console.log(msgResp);
+    let twilResp = new TwilioResponse(msgResp.body, msgResp.dateCreated, msgResp.dateSent, msgResp.dateUpdated, msgResp.status, msgResp.to, false, msgResp.errorCode !== null, msgResp.errorCode, msgResp.errorMessage);
 
     return twilResp;
 }

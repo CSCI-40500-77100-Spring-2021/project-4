@@ -45,6 +45,12 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+
+
+//app routes
+app.use('/api/business', require('./routes/api/business'));
+
+
 if(IN_PROD) {
     app.use(express.static('client/my-app/build'));
     app.enable('trust proxy');
